@@ -2,28 +2,16 @@ window.addEventListener('load', function(){
 
     // referenciar elementos de la pagina
     const msgSuccess = this.document.getElementById('msgSuccess');
-    const btnCierreSesion = this.document.getElementById("btnCierreSesion");
+    const logoutButton = document.getElementById('logout');
 
     // recuperar nombre del usuario del localStorage
     const result = JSON.parse(this.localStorage.getItem('result'));
-    mostrarAlerta(result.nombreUsuario);
-
-
-
-    //obtener el numero de documento y el tipo de documento
-    var tipoDoc = "";
-    var numDoc = ""; 
-
-    numDoc = window.localStorage.getItem("nroDoc");
-    tipoDoc = window.localStorage.getItem("tipoDoc");
-
-
-    btnCierreSesion.addEventListener("click", function () {
-  
-        cerrarSesion(numDoc, tipoDoc);
-    
-      });
+    mostrarAlerta(`Bienvenido ${result.nombreUsuario}`);
+    logoutButton.addEventListener('click', function() {
+        cerrarSesion();
     });
+
+});
 
 function mostrarAlerta(mensaje) {
     msgSuccess.innerHTML = mensaje;
@@ -35,45 +23,27 @@ function ocultarAlerta() {
     msgSuccess.style.display = 'none';
 }
 
-async function cerrarSesion(numDoc, tipoDoc) {
-
-    var hoy = new Date()
-    var dia = hoy.getDate();  
-    var mes = hoy.getMonth()+1;
-    var year = hoy.getFullYear();
-    var hora = hoy.getHours();
-    var min = hoy.getMinutes();
-    var sec = hoy.getSeconds();
-    const time = `${dia}/${mes}/${year} - ${hora}:${min}:${sec}`
-
-    const url = "http://localhost:8082/login/out-async";
-    const data = {
-      tipoDocumento: tipoDoc ,
-      numeroDocumento: numDoc ,
-      fechaCierre:  time
-    };
-  
-    try {
-      const response = await fetch(url, {
-        method: "POST",
+function cerrarSesion() {
+    fetch('http://localhost:8084/login/out-feing', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+            'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data),
-      });
-  
-      
-      if (!response.ok) {
-        msgSuccess.style.background = '#e05555';
-        msgSuccess.style.color = 'white';
-        mostrarAlerta("Error: Ocurrió un problema en el cierre de Sesion");
-        throw new Error('Error: ${response.statusText}');
-      }
-  
-      window.location.replace("indice.html");
-  
-    } catch (error) {
-      console.error('Error: Ocurrió un problema al cerrar Sesión. ', error);
-      mostrarAlerta('Error: Ocurrió un problema al cerrar Sesión.');
-    }
-  }
+        body: JSON.stringify({
+            tipoDocumento: JSON.parse(localStorage.getItem('result')).tdoc,
+            numeroDocumento: JSON.parse(localStorage.getItem('result')).ndoc
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.codigo === "00") {
+            localStorage.removeItem('result');
+            window.location.replace("indice.html");
+        } else {
+            alert("Error al cerrar sesión");
+        }
+    })
+    .catch(error => {
+        console.error('Error al cerrar sesión:', error);
+    });
+}
